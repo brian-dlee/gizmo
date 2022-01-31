@@ -82,22 +82,28 @@ echo "Image:                 ${image_registry}${image_name}"
 
 echo
 
+echo "Building $image_name from $OPT_DOCKER_CONTEXT_PATH"
 docker build -t "$image_name" \
   --build-arg AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
   --build-arg AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
   --build-arg AWS_REGION="${AWS_REGION}" \
   "${OPT_DOCKER_CONTEXT_PATH}"
 
+echo "Tagging $image_name -> $image_registry$image_name:$OPT_TAG"
 docker tag "$image_name" "$image_registry$image_name:$OPT_TAG"
 
 if [[ "${OPT_ADD_TS}" -eq 1 ]]; then
+  echo "Tagging $image_name -> $image_registry$image_name:$OPT_TAG-$tag_ts"
   docker tag "$image_name" "$image_registry$image_name:$OPT_TAG-$tag_ts"
 fi
 
 if [[ "$OPT_PUSH" -eq 1 ]]; then
+  echo "Pushing $image_registry$image_name:$OPT_TAG"
   docker push "$image_registry$image_name:$OPT_TAG"
 
   if [[ "${OPT_ADD_TS}" -eq 1 ]]; then
+    echo "Pushing $image_registry$image_name:$OPT_TAG-$tag_ts"
     docker push "$image_registry$image_name:$OPT_TAG-$tag_ts"
   fi
 fi
+
