@@ -2,6 +2,11 @@
 
 set -e
 
+function abort() {
+  echo "$@"
+  exit 1
+}
+
 AWS_ECR_ORG=
 AWS_REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
