@@ -66,13 +66,13 @@ if [[ -z "$AWS_REGION" ]]; then
 fi
 
 
-test -r "$AWS_ACCESS_KEY_ID" || abort "AWS_ACCESS_KEY_ID could not be determined"
+test -n "$AWS_ACCESS_KEY_ID" || abort "AWS_ACCESS_KEY_ID could not be determined"
 echo "AWS Access Key ID:     ${AWS_ACCESS_KEY_ID:0:4}XXXXXXXXXXXXXXXX"
 
-test -r "$AWS_SECRET_ACCESS_KEY" || abort "AWS_SECRET_ACCESS_KEY could not be determined"
+test -n "$AWS_SECRET_ACCESS_KEY" || abort "AWS_SECRET_ACCESS_KEY could not be determined"
 echo "AWS Secret Access Key: ${AWS_SECRET_ACCESS_KEY}"
 
-test -r "$AWS_REGION" || abort "AWS_REGION could not be determined"
+test -n "$AWS_REGION" || abort "AWS_REGION could not be determined"
 echo "AWS Region:            ${AWS_REGION}"
 
 docker build -t "$image_name" \
