@@ -7,7 +7,7 @@ function abort() {
   exit 1
 }
 
-AWS_ECR_ORG=
+AWS_ECR_ORG=${AWS_ECR_ORG}
 AWS_REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
 
 OPT_DOCKER_CONTEXT_PATH="."
@@ -40,15 +40,13 @@ image_name=${args[0]}
 image_registry=""
 tag_ts=$(date "+%Y%m%d-%H%M")
 
-if [[ -n "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
-  image_registry="$AWS_ECR_ORG.dkr.ecr.$AWS_REGION.amazonaws.com/"
-fi
-
 if [[ "${OPT_ADD_TS}" -eq 1 ]]; then
   echo "Building Docker image $image_name (tag: $OPT_TAG, ts=$tag_ts)"
 else
   echo "Building Docker image $image_name (tag: $OPT_TAG, ts=[DISABLED])"
 fi
+
+echo
 
 if [[ -z "$AWS_ACCESS_KEY_ID" ]]; then
   echo "AWS_ACCESS_KEY_ID is not defined. Attempting to detect variable using the AWS CLI." >&2
@@ -65,15 +63,24 @@ if [[ -z "$AWS_REGION" ]]; then
   AWS_REGION=$(aws configure get "region")
 fi
 
+if [[ -n "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
+  image_registry="$AWS_ECR_ORG.dkr.ecr.$AWS_REGION.amazonaws.com/"
+fi
+
+echo
 
 test -n "$AWS_ACCESS_KEY_ID" || abort "AWS_ACCESS_KEY_ID could not be determined"
-echo "AWS Access Key ID:     ${AWS_ACCESS_KEY_ID:0:4}XXXXXXXXXXXXXXXX"
+echo "AWS Access Key ID:     ${AWS_ACCESS_KEY_ID:0:4}***"
 
 test -n "$AWS_SECRET_ACCESS_KEY" || abort "AWS_SECRET_ACCESS_KEY could not be determined"
-echo "AWS Secret Access Key: ${AWS_SECRET_ACCESS_KEY}"
+echo "AWS Secret Access Key: $(test -z "${AWS_SECRET_ACCESS_KEY}" && echo "[NOT SET]" || echo "[SET]")"
 
 test -n "$AWS_REGION" || abort "AWS_REGION could not be determined"
 echo "AWS Region:            ${AWS_REGION}"
+
+echo "Image:                 ${image_registry}${image_name}"
+
+echo
 
 docker build -t "$image_name" \
   --build-arg AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
