@@ -78,7 +78,7 @@ echo "AWS Region:            ${AWS_REGION}"
 docker build -t "$image_name" \
   --build-arg AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
   --build-arg AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
-  --build-arg AWS_REGION="${AWS_REGION}"
+  --build-arg AWS_REGION="${AWS_REGION}" \
   "${OPT_DOCKER_CONTEXT_PATH}"
 
 docker tag "$image_name" "$image_registry$image_name:$OPT_TAG"
