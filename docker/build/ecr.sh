@@ -3,7 +3,7 @@
 set -e
 
 function abort() {
-  echo "$@"
+  echo "$@" >&2
   exit 1
 }
 
