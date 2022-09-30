@@ -1,19 +1,19 @@
 #!/bin/bash
 
-set -e
+set -ue
 
 ACTIVE_EXPRESSION='{{.State.Status}}'
 ACTIVE_OK="running"
 HEALTH_EXPRESSION='{{.State.Health.Status}}'
 HEALTH_OK="healthy"
 
-DATABASE_USER=app
+DATABASE_USER=${DATABASE_USER:-app}
 DATABASE_PASSWORD=
-DATABASE_NAME=defaultdb
-DATABASE_PORT=26257
+DATABASE_NAME=${DATABASE_NAME:-defaultdb}
+DATABASE_PORT=${DATABASE_PORT:-26257}
 
 bin=$(which docker)
-project=$(cd "$(dirname "$0")/.." && pwd)
+dir=$(cd "$(dirname "$0")" && pwd)
 
 function docker() {
   echo " [debug] docker $@" >&2
@@ -52,22 +52,75 @@ function start_environment() {
     echo "GRANT admin TO $DATABASE_USER;" | docker compose exec -T db1 ./cockroach sql --insecure >/dev/null 2>&1
     docker compose exec db1 touch /cockroach/cockroach-data/.database-initialized
   fi
+
+  display_environment_status
 }
 
 function display_environment_status() {
-  echo
-  echo ====================================================================================
-  echo
-  echo [SUCCESS] CockroachDB is online. Use the following url to connect:
-  echo
-  echo DATABASE_URL=\"postgresql://$DATABASE_USER:$DATABASE_PASSWORD@localhost:$DATABASE_PORT/$DATABASE_NAME?schema=public\"
-  echo
-  echo ------------------------------------------------------------------------------------
-  echo
-  "$bin" compose ps -a
-  echo
-  echo ====================================================================================
-  echo 
+  local db_service_ok
+
+  db_service_ok=$(is_service_healthy "db1")
+
+  {
+    echo
+    echo ====================================================================================
+    echo
+    if [[ "$db_service_ok" -eq 1 ]]; then
+      echo "[SUCCESS] CockroachDB is online. Use the following url to connect:"
+      echo
+      echo "DATABASE_URL=\"postgresql://$DATABASE_USER:$DATABASE_PASSWORD@localhost:$DATABASE_PORT/$DATABASE_NAME?schema=public\""
+    else
+      echo "[FAIL] CockroachDB is not online."
+    fi
+    echo
+    echo ------------------------------------------------------------------------------------
+    echo
+    "$bin" compose ps -a
+    echo
+    echo ====================================================================================
+    echo
+  } >&2
+}
+
+function is_service_healthy() {
+  local service=$1
+  local container
+
+  if [[ $# -gt 1 ]]; then
+    container="$2"
+  fi
+
+  check_service "$service" "$HEALTH_EXPRESSION" "$HEALTH_OK" "$container"
+}
+
+function is_service_running() {
+  local service=$1
+  local container
+
+  if [[ $# -gt 1 ]]; then
+    container="$2"
+  fi
+
+  check_service "$service" "$ACTIVE_EXPRESSION" "$ACTIVE_OK" "$container"
+}
+
+function check_service() {
+  local service=$1
+  local expression=$2
+  local ok_value=$3
+  local container
+
+  if [[ $# -gt 3 && -n "$4" ]]; then
+    container="$4"
+  else
+    container=$(docker compose ps -q "$service")
+  fi
+
+  if test "$(docker inspect -f "$expression" "$container")" == "$ok_value"; then
+    echo 1
+  else
+    echo 0
+  fi
 }
 
 function wait_for_service() {
@@ -76,15 +129,15 @@ function wait_for_service() {
   local service=$1
   local expression=$2
   local ok_value=$3
+  local container
 
   echo "Waiting for $service. Expression=$expression, OkValue=$3, MaxAttempts=$max_attempts, Interval=${interval}s" >&2
 
-  local container=$(docker compose ps -q $service)
-
+  container=$(docker compose ps -q "$service")
   attempts="$max_attempts"
 
   while true; do
-    if [[ $(docker inspect -f "$expression" "$container") == "$ok_value" ]]; then
+    if [[ "$(check_service "$service" "$expression" "$ok_value" "$container")" -eq 1 ]]; then
       break
     fi
 
@@ -99,24 +152,27 @@ function wait_for_service() {
   done
 }
 
-cd "$project/docker/local-environment"
+cd "$dir"
 
 echo "Local Environment Location: $(pwd)" >&2
 echo >&2
 
 case "$1" in
 create|start) start_environment;;
+status) display_environment_status;;
 stop) stop_environment;;
 destroy) destroy_environment;;
 *)
   {
     echo "Supply one of the following commands: create, start, stop, and destroy."
-    echo 
+    echo
     echo "USAGE: $(basename "$0") COMMAND"
-    echo 
+    echo
     echo "  create:  Create and start your environment"
     echo
     echo "  start:   The same as \"create\""
+    echo
+    echo "  status:  Display the environment's status"
     echo
     echo "  stop:    Shutdown your environment but do not destroy any resources"
     echo
