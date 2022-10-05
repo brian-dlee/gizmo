@@ -34,15 +34,15 @@ find "$GIZMO_BIN" -exec chmod +x {} \;
 case $(basename "$SHELL") in
 zsh)
   if ! grep ".gizmo/init.sh" "$HOME/.zshrc" >/dev/null; then
-    echo "Add `source $HOME/.gizmo/init.sh` to your .zshrc file to complete installation." >&2
+    echo 'Add `source $HOME/.gizmo/init.sh` to your .zshrc file to complete installation.' >&2
   fi
   ;;
 bash)
   if ! grep ".gizmo/init.sh" "$HOME/.bashrc" >/dev/null; then
-    echo "Add `source $HOME/.gizmo/init.sh` to your .bashrc file to complete installation." >&2
+    echo 'Add `source $HOME/.gizmo/init.sh` to your .bashrc file to complete installation.' >&2
   fi
   ;;
 *)
-  echo "Add `source $HOME/.gizmo/init.sh` to your shell configuration file to complete installation." >&2
+  echo 'Add `source $HOME/.gizmo/init.sh` to your shell configuration file to complete installation.' >&2
   ;;
 esac
