@@ -14,10 +14,10 @@ else
   git pull
 fi
 
-cat >"$HOME/.gizmo/exports.sh" <<EOF
-export GIZMO_HOME="\$HOME/.gizmo"
-export GIZMO_BIN="\$GIZMO_HOME/bin"
-export GIZMO_SRC="\$GIZMO_HOME/src"
+cat >"$HOME/.gizmo/exports.sh" <<"EOF"
+export GIZMO_HOME="$HOME/.gizmo"
+export GIZMO_BIN="$GIZMO_HOME/bin"
+export GIZMO_SRC="$GIZMO_HOME/src"
 export PATH="$HOME/.gizmo/bin:$PATH"
 EOF
 
