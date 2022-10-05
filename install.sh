@@ -24,8 +24,8 @@ export PATH="$HOME/.gizmo/bin:$PATH"
 EOF
 
 # install scripts
-cp "$GIZMO_SRC/install.sh" "$GIZMO_BIN/gizmo-update"
-cp "$GIZMO_SRC/docker/build/ecr.sh" "$GIZMO_BIN/gizmo-ecr"
+cp -f "$GIZMO_SRC/install.sh" "$GIZMO_BIN/gizmo-update"
+cp -f "$GIZMO_SRC/docker/build/ecr.sh" "$GIZMO_BIN/gizmo-ecr"
 
 # make all scripts executable
 find "$GIZMO_BIN" -exec chmod +x {} \;
