@@ -4,7 +4,7 @@ set -e
 
 GIZMO_HOME="$HOME/.gizmo"
 GIZMO_BIN="$GIZMO_HOME/bin"
-GIZMO_SRC="$GIZMO_SRC/bin"
+GIZMO_SRC="$GIZMO_HOME/src"
 
 if [[ ! -e "$HOME/.gizmo" ]]; then
   mkdir -p "$HOME/.gizmo/bin"
@@ -17,7 +17,7 @@ fi
 cat >"$HOME/.gizmo/exports.sh" <<EOF
 export GIZMO_HOME="\$HOME/.gizmo"
 export GIZMO_BIN="\$GIZMO_HOME/bin"
-export GIZMO_SRC="\$GIZMO_SRC/bin"
+export GIZMO_SRC="\$GIZMO_HOME/src"
 export PATH="$HOME/.gizmo/bin:$PATH"
 EOF
 
