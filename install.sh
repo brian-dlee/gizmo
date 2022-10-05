@@ -21,8 +21,11 @@ export GIZMO_SRC="$GIZMO_HOME/src"
 export PATH="$HOME/.gizmo/bin:$PATH"
 EOF
 
-chmod +x "$GIZMO_SRC/docker/build/ecr.sh"
-ln -s "$GIZMO_SRC/docker/build/ecr.sh" "$GIZMO_BIN/gizmo-ecr"
+# install scripts
+cp "$GIZMO_SRC/docker/build/ecr.sh" "$GIZMO_BIN/gizmo-ecr"
+
+# make all scripts executable
+find "$GIZMO_BIN" -exec chmod +x {} \;
 
 case $(basename "$SHELL") in
 zsh)
