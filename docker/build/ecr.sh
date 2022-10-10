@@ -50,17 +50,23 @@ echo
 
 if [[ -z "$AWS_ACCESS_KEY_ID" ]]; then
   echo "AWS_ACCESS_KEY_ID is not defined. Attempting to detect variable using the AWS CLI." >&2
-  AWS_ACCESS_KEY_ID=$(aws configure get "aws_access_key_id")
+  AWS_ACCESS_KEY_ID=$(aws configure get "aws_access_key_id" || true)
 fi
 
 if [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
   echo "AWS_SECRET_ACCESS_KEY is not defined. Attempting to detect variable using the AWS CLI." >&2
-  AWS_SECRET_ACCESS_KEY=$(aws configure get "aws_secret_access_key")
+  AWS_SECRET_ACCESS_KEY=$(aws configure get "aws_secret_access_key" || true)
 fi
 
 if [[ -z "$AWS_REGION" ]]; then
   echo "AWS_REGION is not defined. Attempting to detect variable using the AWS CLI." >&2
-  AWS_REGION=$(aws configure get "region")
+  AWS_REGION=$(aws configure get "region" || true)
+fi
+
+if [[ -n "$AWS_ECR_ORG" ]]; then
+  test [[ "$OPT_PUSH" == 1 && -z "$AWS_ACCESS_KEY_ID" ]] && echo "warning: AWS_ACCESS_KEY_ID is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied." >&2
+  test [[ "$OPT_PUSH" == 1 && -z "$AWS_SECRET_ACCESS_KEY" ]] && echo "warning: AWS_SECRET_ACCESS_KEY is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied." >&2
+  test [[ -z "$AWS_REGION" ]] && echo "warning: AWS_REGION is not defined, but an ECR org ($AWS_ECR_ORG) was supplied." >&2
 fi
 
 if [[ -n "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
