@@ -75,7 +75,7 @@ fi
 
 if [[ -n "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
   image_registry="$AWS_ECR_ORG.dkr.ecr.$AWS_REGION.amazonaws.com/"
-else if [[ -z "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
+elif [[ -z "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
   err "AWS_REGION is not defined, but AWS_ECR_ORG is defined. The image will not be pointed to an ECR repository."
 fi
 
