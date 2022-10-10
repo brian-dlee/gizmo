@@ -3,8 +3,12 @@
 set -e
 
 function abort() {
-  echo "$@" >&2
+  err "$@"
   exit 1
+}
+
+function err() {
+  echo "$@" >&2
 }
 
 AWS_ECR_ORG=${AWS_ECR_ORG}
@@ -49,44 +53,50 @@ fi
 echo
 
 if [[ -z "$AWS_ACCESS_KEY_ID" ]]; then
-  echo "AWS_ACCESS_KEY_ID is not defined. Attempting to detect variable using the AWS CLI." >&2
+  err "AWS_ACCESS_KEY_ID is not defined. Attempting to detect variable using the AWS CLI."
   AWS_ACCESS_KEY_ID=$(aws configure get "aws_access_key_id" || true)
 fi
 
 if [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
-  echo "AWS_SECRET_ACCESS_KEY is not defined. Attempting to detect variable using the AWS CLI." >&2
+  err "AWS_SECRET_ACCESS_KEY is not defined. Attempting to detect variable using the AWS CLI."
   AWS_SECRET_ACCESS_KEY=$(aws configure get "aws_secret_access_key" || true)
 fi
 
 if [[ -z "$AWS_REGION" ]]; then
-  echo "AWS_REGION is not defined. Attempting to detect variable using the AWS CLI." >&2
+  err "AWS_REGION is not defined. Attempting to detect variable using the AWS CLI."
   AWS_REGION=$(aws configure get "region" || true)
 fi
 
 if [[ -n "$AWS_ECR_ORG" ]]; then
-  test [[ "$OPT_PUSH" == 1 && -z "$AWS_ACCESS_KEY_ID" ]] && echo "warning: AWS_ACCESS_KEY_ID is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied." >&2
-  test [[ "$OPT_PUSH" == 1 && -z "$AWS_SECRET_ACCESS_KEY" ]] && echo "warning: AWS_SECRET_ACCESS_KEY is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied." >&2
-  test [[ -z "$AWS_REGION" ]] && echo "warning: AWS_REGION is not defined, but an ECR org ($AWS_ECR_ORG) was supplied." >&2
+  test [[ "$OPT_PUSH" -eq 1 && -z "$AWS_ACCESS_KEY_ID" ]] && err "warning: AWS_ACCESS_KEY_ID is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied."
+  test [[ "$OPT_PUSH" -eq 1 && -z "$AWS_SECRET_ACCESS_KEY" ]] && err "warning: AWS_SECRET_ACCESS_KEY is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied."
+  test [[ -z "$AWS_REGION" ]] && err "warning: AWS_REGION is not defined, but an ECR org ($AWS_ECR_ORG) was supplied."
 fi
 
 if [[ -n "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
   image_registry="$AWS_ECR_ORG.dkr.ecr.$AWS_REGION.amazonaws.com/"
+else if [[ -z "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
+  err "AWS_REGION is not defined, but AWS_ECR_ORG is defined. The image will not be pointed to an ECR repository."
 fi
 
 echo
 
-test -n "$AWS_ACCESS_KEY_ID" || abort "AWS_ACCESS_KEY_ID could not be determined"
+test -n "$AWS_ACCESS_KEY_ID" || err "AWS_ACCESS_KEY_ID could not be determined"
 echo "AWS Access Key ID:     ${AWS_ACCESS_KEY_ID:0:4}***"
 
-test -n "$AWS_SECRET_ACCESS_KEY" || abort "AWS_SECRET_ACCESS_KEY could not be determined"
+test -n "$AWS_SECRET_ACCESS_KEY" || err "AWS_SECRET_ACCESS_KEY could not be determined"
 echo "AWS Secret Access Key: $(test -z "${AWS_SECRET_ACCESS_KEY}" && echo "[NOT SET]" || echo "[SET]")"
 
-test -n "$AWS_REGION" || abort "AWS_REGION could not be determined"
+test -n "$AWS_REGION" || err "AWS_REGION could not be determined"
 echo "AWS Region:            ${AWS_REGION}"
 
 echo "Image:                 ${image_registry}${image_name}"
 
-echo
+if [[ "$OPT_PUSH" -eq 1 ]]; then
+  if [[ -z "$AWS_ACCESS_KEY_ID" && -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+    abort "Unable to continue without AWS credentials is not provided and --push is set"  
+  fi
+fi
 
 echo "Building $image_name from $OPT_DOCKER_CONTEXT_PATH"
 docker build -t "$image_name" \
