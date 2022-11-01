@@ -22,7 +22,7 @@ services:
       - db1:/cockroach/cockroach-data
 
 networks:
-  needle:
+  {{ name }}:
     name: {{ name }}
 
 volumes:
