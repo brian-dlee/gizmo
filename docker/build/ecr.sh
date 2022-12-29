@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 function abort() {
   err "$@"
@@ -68,9 +68,9 @@ if [[ -z "$AWS_REGION" ]]; then
 fi
 
 if [[ -n "$AWS_ECR_ORG" ]]; then
-  test [[ "$OPT_PUSH" -eq 1 && -z "$AWS_ACCESS_KEY_ID" ]] && err "warning: AWS_ACCESS_KEY_ID is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied."
-  test [[ "$OPT_PUSH" -eq 1 && -z "$AWS_SECRET_ACCESS_KEY" ]] && err "warning: AWS_SECRET_ACCESS_KEY is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied."
-  test [[ -z "$AWS_REGION" ]] && err "warning: AWS_REGION is not defined, but an ECR org ($AWS_ECR_ORG) was supplied."
+  test "$OPT_PUSH" -eq 1 && test -z "$AWS_ACCESS_KEY_ID" && err "warning: AWS_ACCESS_KEY_ID is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied."
+  test "$OPT_PUSH" -eq 1 && test -z "$AWS_SECRET_ACCESS_KEY" && err "warning: AWS_SECRET_ACCESS_KEY is not defined, but an ECR org ($AWS_ECR_ORG) and --push was supplied."
+  test -z "$AWS_REGION" && err "warning: AWS_REGION is not defined, but an ECR org ($AWS_ECR_ORG) was supplied."
 fi
 
 if [[ -n "$AWS_REGION" && -n "$AWS_ECR_ORG" ]]; then
