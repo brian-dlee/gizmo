@@ -1,0 +1,113 @@
+#!python
+
+import argparse
+import datetime
+import logging
+import json
+import pathlib
+import subprocess
+
+
+now = datetime.datetime.now()
+script_path = pathlib.Path(__file__).resolve()
+
+def main(args):
+    aws_regions = args.include_region or []
+    config_name = args.config_name
+    default_identity_file = args.default_identity_file
+    default_user = args.default_user
+
+    p = pathlib.Path.home().joinpath(".ssh", f"{config_name}.sshconfig")
+    hosts = {}
+
+    if p.exists():
+        with p.open('r') as fp:
+            name = None
+            host = None
+
+            for line in fp:
+                is_empty = len(line.strip()) == 0
+                fields = line.strip().split(' ', maxsplit=2)
+
+                if fields[0].lower() == "host":
+                    name = fields[1]
+                    logging.info("Reading %s", name)
+                    hosts[name] = host = {}
+                    continue
+
+                if is_empty:
+                    if host is not None:
+                        logging.info("  >> %s", json.dumps(host))
+
+                    host = None
+                    name = None
+                    continue
+
+                if host is not None and name and len(fields) > 1 and fields[0] and fields[1]:
+                    logging.info("     Field: %s: %s", fields[0], fields[1])
+                    host[fields[0]] = fields[1]
+
+    for region in aws_regions:
+        result = subprocess.run(["aws", "ec2", "describe-instances", "--region", region], capture_output=True, check=True)
+        output = json.loads(result.stdout)
+
+        for r in output['Reservations']:
+            for i in r['Instances']:
+                name = ""
+                public_dns_name = i['PublicDnsName']
+
+                if not public_dns_name:
+                    continue
+
+                tags = i.get('Tags', [])
+                
+                for t in tags:
+                    if t['Key'] == 'Name':
+                        name = t['Value']
+                        break
+
+                if not name:
+                    continue
+
+                if name in hosts:
+                    if hosts[name].get("HostName") == public_dns_name:
+                        continue
+
+                    logging.info("U: %s -> %s", name, public_dns_name)
+                    hosts[name]["HostName"] = public_dns_name
+                else:
+                    logging.info("A: %s -> %s", name, public_dns_name)
+                    hosts[name] = {
+                        "HostName": public_dns_name,
+                        "IdentityFile": default_identity_file,
+                        "User": default_user,
+                    }
+
+    with p.open('w') as fp:
+        fp.write(f"# Generated on {now.isoformat()} by {script_path}\n\n")
+
+        for host, fields in sorted(hosts.items(), key=lambda x: x[0]):
+            if len(fields) == 0:
+                continue
+
+            logging.info("Writing %s", host)
+
+            fp.write(f"Host {host}\n")
+
+            for key, value in sorted(fields.items(), key=lambda x: x[0]):
+                fp.write(f"\t{key} {value}\n")
+                
+            fp.write("\n")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config_name')
+    parser.add_argument('--include-region', '-r', action="append")
+    parser.add_argument('--default-identity-file', '-i', default='~/.ssh/id_rsa')
+    parser.add_argument('--default-user', '-u', default='ec2-user')
+
+    main(parser.parse_args())
+
